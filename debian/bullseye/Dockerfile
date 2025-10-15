@@ -1,7 +1,28 @@
-FROM debian:bullseye
+FROM debian:bullseye-slim
+#LABEL maintainer="Your Name <your.email@example.com>"
 
 RUN apt-get update && \
-    apt-get install -y clamav clamav-freshclam && \
-    freshclam
+    apt-get install -y --no-install-recommends \
+        bash \
+        clamav \
+        clamav-daemon \
+        clamav-freshclam \
+        unrar \
+    && rm -rf /var/lib/apt/lists/*
 
-CMD ["clamd"]
+COPY conf /etc/clamav
+COPY bootstrap.sh /
+COPY envconfig.sh /
+COPY check.sh /
+
+RUN mkdir -p /var/run/clamav && \
+    chown clamav:clamav /var/run/clamav && \
+    chmod 750 /var/run/clamav && \
+    chown -R clamav:clamav bootstrap.sh check.sh /etc/clamav && \
+    chmod u+x bootstrap.sh check.sh
+
+EXPOSE 3310/tcp
+
+USER clamav
+
+CMD ["/bootstrap.sh"]
